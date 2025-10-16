@@ -15,10 +15,12 @@ const authRoutes = require("./routes/authRoute");
 const profileRoutes = require("./routes/profileRoute");
 const adminRoutes = require("./routes/adminRoute");
 const advancedRoutes = require("./routes/advancedRoute");
+const rbacRoutes = require("./routes/rbacRoute");
 
 // Import services để test connection
 const emailService = require("./services/emailService");
 const CloudinaryService = require("./services/cloudinaryService");
+const { createSampleUsers } = require("./utils/seedRBAC");
 
 // Use routes
 app.use("/api/users", userRoutes);
@@ -26,12 +28,43 @@ app.use("/api/auth", authRoutes);
 app.use("/api/profile", profileRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/advanced", advancedRoutes);
+app.use("/api/rbac", rbacRoutes);
+
+// Test route để debug
+app.get("/api/test", (req, res) => {
+  res.json({ message: "Test route working", timestamp: new Date() });
+});
+
+// Debug RBAC route
+app.get("/api/debug/rbac", (req, res) => {
+  const authHeader = req.header("Authorization");
+  res.json({ 
+    message: "Debug RBAC endpoint", 
+    hasAuth: !!authHeader,
+    authHeader: authHeader,
+    timestamp: new Date() 
+  });
+});
+
+// Debug login route - để test frontend connection
+app.post("/api/debug/login", async (req, res) => {
+  console.log("🔍 Debug login request:", req.body);
+  res.json({
+    success: true,
+    message: "Debug login endpoint working",
+    receivedData: req.body,
+    timestamp: new Date()
+  });
+});
 
 // Kết nối MongoDB
 mongoose
   .connect(process.env.MONGO_URI)
   .then(() => {
     console.log("✅ MongoDB connected");
+
+    // Tạo dữ liệu mẫu RBAC
+    createSampleUsers();
 
     // Test connections (commented out to prevent crash during testing)
     // emailService.testConnection().catch(err =>

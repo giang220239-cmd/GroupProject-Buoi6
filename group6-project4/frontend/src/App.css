@@ -1,0 +1,14 @@
+/* App.css - Basic styles for User Management App */
+.App {
+  min-height: 100vh;
+}
+
+/* Remove default margins and paddings */
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+}

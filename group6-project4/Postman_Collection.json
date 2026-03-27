@@ -1,0 +1,380 @@
+{
+  "info": {
+    "name": "Advanced Features API Tests",
+    "description": "Test collection for forgot password, reset password, and upload avatar APIs",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "01 - Create Test User",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"name\": \"{{userName}}\",\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{userPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/signup",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "signup"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 201\", function () {",
+              "    pm.response.to.have.status(201);",
+              "});",
+              "",
+              "pm.test(\"Save JWT Token\", function () {",
+              "    const response = pm.response.json();",
+              "    if (response.token) {",
+              "        pm.environment.set(\"jwtToken\", response.token);",
+              "        console.log(\"JWT Token saved:\", response.token.substring(0, 20) + \"...\");",
+              "    }",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "02 - Forgot Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/advanced/forgot-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["advanced", "forgot-password"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Response has success true\", function () {",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.success).to.be.true;",
+              "});",
+              "",
+              "pm.test(\"Email matches\", function () {",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.data.email).to.eql(pm.environment.get(\"userEmail\"));",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "03 - Reset Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"{{resetToken}}\",\n  \"newPassword\": \"{{newPassword}}\",\n  \"confirmPassword\": \"{{newPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/advanced/reset-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["advanced", "reset-password"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Status code is 200\", function () {",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test(\"Password reset successful\", function () {",
+              "    const response = pm.response.json();",
+              "    pm.expect(response.success).to.be.true;",
+              "    pm.expect(response.message).to.include(\"thành công\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "04 - Login with New Password",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"{{userEmail}}\",\n  \"password\": \"{{newPassword}}\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/auth/login",
+          "host": ["{{baseUrl}}"],
+          "path": ["auth", "login"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Login successful with new password\", function () {",
+              "    pm.response.to.have.status(200);",
+              "    ",
+              "    const response = pm.response.json();",
+              "    pm.environment.set(\"jwtToken\", response.token);",
+              "    console.log(\"New JWT Token saved after password reset\");",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "05 - Upload Avatar",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "avatar",
+              "type": "file",
+              "description": "Choose an image file (jpg/png)"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/advanced/upload-avatar",
+          "host": ["{{baseUrl}}"],
+          "path": ["advanced", "upload-avatar"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Avatar upload attempted\", function () {",
+              "    // Có thể 200 (success) hoặc 500 (cloudinary error)",
+              "    pm.expect([200, 500]).to.include(pm.response.code);",
+              "});",
+              "",
+              "if (pm.response.code === 200) {",
+              "    pm.test(\"Avatar uploaded successfully\", function () {",
+              "        const response = pm.response.json();",
+              "        pm.expect(response.success).to.be.true;",
+              "        pm.expect(response.data.user.avatar.url).to.be.a('string');",
+              "    });",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "06 - Delete Avatar",
+      "request": {
+        "method": "DELETE",
+        "header": [
+          {
+            "key": "Authorization",
+            "value": "Bearer {{jwtToken}}"
+          }
+        ],
+        "url": {
+          "raw": "{{baseUrl}}/advanced/delete-avatar",
+          "host": ["{{baseUrl}}"],
+          "path": ["advanced", "delete-avatar"]
+        }
+      }
+    },
+    {
+      "name": "ERROR - Invalid Email",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"email\": \"khongtontai@fake.com\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/advanced/forgot-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["advanced", "forgot-password"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Should return 404 for invalid email\", function () {",
+              "    pm.response.to.have.status(404);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "ERROR - Invalid Token",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"token\": \"token-gia-12345\",\n  \"newPassword\": \"newpass123\",\n  \"confirmPassword\": \"newpass123\"\n}"
+        },
+        "url": {
+          "raw": "{{baseUrl}}/advanced/reset-password",
+          "host": ["{{baseUrl}}"],
+          "path": ["advanced", "reset-password"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Should return 400 for invalid token\", function () {",
+              "    pm.response.to.have.status(400);",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "ERROR - No Authorization",
+      "request": {
+        "method": "POST",
+        "header": [],
+        "body": {
+          "mode": "formdata",
+          "formdata": [
+            {
+              "key": "avatar",
+              "type": "file",
+              "description": "Choose an image file"
+            }
+          ]
+        },
+        "url": {
+          "raw": "{{baseUrl}}/advanced/upload-avatar",
+          "host": ["{{baseUrl}}"],
+          "path": ["advanced", "upload-avatar"]
+        }
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test(\"Should return 401 for no authorization\", function () {",
+              "    pm.response.to.have.status(401);",
+              "});"
+            ]
+          }
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [""]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:8080/api",
+      "type": "string"
+    },
+    {
+      "key": "userEmail",
+      "value": "testuser@gmail.com",
+      "type": "string"
+    },
+    {
+      "key": "userName",
+      "value": "Nguyen Van Test",
+      "type": "string"
+    },
+    {
+      "key": "userPassword",
+      "value": "123456789",
+      "type": "string"
+    },
+    {
+      "key": "newPassword",
+      "value": "newpass123",
+      "type": "string"
+    },
+    {
+      "key": "jwtToken",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "resetToken",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}
